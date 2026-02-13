@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "./pocketbase serve --http=0.0.0.0:$PORT  --encryptionEnv=PB_ENCRYPTION_KEY --hooksWatch=false",
-    "start":"./pocketbase serve --http=0.0.0.0:$PORT --dir=/tmp/pb_data --hooksDir=./pb_hooks --newAdminEmail=changachsharon14@gmail.com.com --newAdminPassword=uranium2020",
+    "start": "./pocketbase serve --http=0.0.0.0:$PORT --dir=/tmp/pb_data --hooksDir=./pb_hooks --hooksWatch=false",
     "migrations:up": "./pocketbase migrate up --encryptionEnv=PB_ENCRYPTION_KEY --dir=/data --migrationsDir=./pb_migrations --hooksDir=./pb_hooks --hooksWatch=false",
     "migrations:revert": "./pocketbase horizons migrations:revert --encryptionEnv=PB_ENCRYPTION_KEY --dir=/data --migrationsDir=./pb_migrations --hooksDir=./pb_hooks --hooksWatch=false"
   }
