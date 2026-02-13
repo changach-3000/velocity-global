@@ -1,0 +1,68 @@
+/*
+  TEMPLATE STYLES: These styles are used as a base template.
+  AI is allowed to modify these styles as needed.
+*/
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+	@apply bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 bg-slate-900 text-white;
+	font-family: 'DM Sans', sans-serif;
+}
+
+/* Badge Animations */
+@keyframes badgeGlowPulse {
+  0% {
+    filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.3));
+    opacity: 0.8;
+  }
+  50% {
+    filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.6));
+    opacity: 1;
+  }
+  100% {
+    filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.3));
+    opacity: 0.8;
+  }
+}
+
+@keyframes badgeRotateHover {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(3deg) scale(1.05);
+  }
+  100% {
+    transform: rotate(-3deg) scale(1.05);
+  }
+}
+
+@keyframes dualGlowPulse {
+  0% {
+    filter: drop-shadow(0 0 5px rgba(229, 228, 226, 0.4)) drop-shadow(0 0 10px rgba(255, 215, 0, 0.2));
+  }
+  50% {
+    filter: drop-shadow(0 0 20px rgba(229, 228, 226, 0.8)) drop-shadow(0 0 30px rgba(255, 215, 0, 0.4));
+  }
+  100% {
+    filter: drop-shadow(0 0 5px rgba(229, 228, 226, 0.4)) drop-shadow(0 0 10px rgba(255, 215, 0, 0.2));
+  }
+}
+
+.badge-hover-effect {
+  transition: all 0.3s ease;
+}
+
+.badge-hover-effect:hover {
+  animation: badgeRotateHover 2s infinite ease-in-out;
+}
+
+.badge-glow {
+  animation: badgeGlowPulse 3s infinite ease-in-out;
+}
+
+.badge-dual-glow {
+  animation: dualGlowPulse 3s infinite ease-in-out;
+}
