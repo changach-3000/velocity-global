@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "./pocketbase serve --http=0.0.0.0:$PORT  --encryptionEnv=PB_ENCRYPTION_KEY --hooksWatch=false",
-    "start": "./pocketbase migrate up --http=0.0.0.0:$PORT --dir=/data --hooksDir=./pb_hooks --hooksWatch=false --origins='https://velocitygloballeasing.com,http://localhost:3000,http://localhost:5173'",
+    "start": "./pocketbase migrate up --http=0.0.0.0:$PORT --dir=/data --hooksDir=./pb_hooks --hooksWatch=false --origins='https://velocitygloballeasing.com'",
     "migrations:up": "./pocketbase migrate up --encryptionEnv=PB_ENCRYPTION_KEY --dir=/data --migrationsDir=./pb_migrations --hooksDir=./pb_hooks --hooksWatch=false",
     "migrations:revert": "./pocketbase horizons migrations:revert --encryptionEnv=PB_ENCRYPTION_KEY --dir=/data --migrationsDir=./pb_migrations --hooksDir=./pb_hooks --hooksWatch=false"
   }
