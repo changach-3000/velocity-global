@@ -108,7 +108,6 @@ router.post('/initialize', async (req, res) => {
       {
         email: userEmail,
         amount: amountInKobo,
-        currency: 'USD',
       },
       {
         headers: {
