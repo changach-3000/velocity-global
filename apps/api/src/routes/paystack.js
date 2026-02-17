@@ -362,7 +362,7 @@ const authenticatePocketBase = async () => {
   try {
     if (!pb.authStore.isValid) {
       console.log(`[${getTimestamp()}] [Paystack] Authenticating as superuser...`);
-      await pb.admins.authWithPassword(
+      await pb.collection('_superusers').authWithPassword(
         process.env.POCKETBASE_ADMIN_EMAIL,
         process.env.POCKETBASE_ADMIN_PASSWORD
       );
