@@ -362,7 +362,7 @@ const authenticatePocketBase = async () => {
   try {
     if (!pb.authStore.isValid) {
       console.log(`[${getTimestamp()}] [Paystack] Authenticating as user...`);
-      await pb.collection(' users').authWithPassword(
+      await pb.collection('users').authWithPassword(
         process.env.POCKETBASE_ADMIN_EMAIL,
         process.env.POCKETBASE_ADMIN_PASSWORD
       );
