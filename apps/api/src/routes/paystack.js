@@ -564,7 +564,7 @@ router.post('/verify', async (req, res) => {
 
         // Check if enrollment already exists to avoid duplicates
         try {
-          const existing = await pb.collection('enrollments').getFirstListItem(
+          const existing = await pb.collection('enrollment').getFirstListItem(
             `user_id="${userId}" && course_id="${cId}"`
           );
           if (existing) {
@@ -581,12 +581,12 @@ router.post('/verify', async (req, res) => {
           // Not found, proceed to create
         }
 
-        const enrollment = await pb.collection('enrollments').create({
+        const enrollment = await pb.collection('enrollment').create({
           user_id: userId,
           course_id: cId,
           enrollment_date: new Date().toISOString(),
           status: 'active',
-          payment_reference: reference
+          stripe_session_id: reference
         });
 
         console.log(`[${getTimestamp()}] [Paystack] Enrollment created successfully: ${enrollment.id}`);
