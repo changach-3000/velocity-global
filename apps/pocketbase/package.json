@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "./pocketbase serve --http=0.0.0.0:$PORT  --encryptionEnv=PB_ENCRYPTION_KEY --hooksWatch=false",
-    "start": "./pocketbase serve --http=0.0.0.0:$PORT --dir=/data --hooksDir=./pb_hooks --hooksWatch=false --encryptionEnv=PB_ENCRYPTION_KEY --origins=https://www.velocitygloballeasing.com/",
+   "start": "./pocketbase serve --http=0.0.0.0:$PORT --dir=/data --hooksDir=./pb_hooks --hooksWatch=false --encryptionEnv=PB_ENCRYPTION_KEY --origins=https://velocitygloballeasing.com,https://www.velocitygloballeasing.com,https://new-velocity-global-web.vercel.app,https://new-velocity-global-web-changach-3000s-projects.vercel.app,http://localhost:5173,http://localhost:3000",
     "migrations:up": "./pocketbase migrate up --encryptionEnv=PB_ENCRYPTION_KEY --dir=/data --migrationsDir=./pb_migrations --hooksDir=./pb_hooks --hooksWatch=false",
     "migrations:revert": "./pocketbase horizons migrations:revert --encryptionEnv=PB_ENCRYPTION_KEY --dir=/data --migrationsDir=./pb_migrations --hooksDir=./pb_hooks --hooksWatch=false"
   }
