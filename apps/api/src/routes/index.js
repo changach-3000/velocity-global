@@ -13,6 +13,7 @@ export default function routes() {
   router.use('/health', healthCheckRouter);
   router.use('/diagnostic', diagnosticRouter);
   router.use('/contact', contactRouter);
+  router.use('/membership', membershipRouter); 
   
   return router;
 }

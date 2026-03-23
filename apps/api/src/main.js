@@ -49,6 +49,23 @@ const corsOptions = {
   optionsSuccessStatus: 200
 };
 
+app.use(async (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7);
+    try {
+      const pb = new PocketBase(process.env.POCKETBASE_URL || 'http://localhost:8090');
+      pb.authStore.save(token);
+      if (pb.authStore.isValid) {
+        req.auth = pb.authStore.record;  // { id, email, ... }
+      }
+    } catch (e) {
+      // Invalid token — req.auth stays undefined, protected routes will reject
+    }
+  }
+  next();
+});
+
 // ✅ ORDER MATTERS: Middleware FIRST
 app.use(cors(corsOptions));
 app.use(express.json());
