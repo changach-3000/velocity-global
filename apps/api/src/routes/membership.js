@@ -100,17 +100,20 @@ const calculateRefundEligibility = (purchaseDate) => {
  * Expects userId and tier in request body (like paystack.js)
  */
 router.post("/initiate-payment", async (req, res) => {
-  console.log(
-    `[${getTimestamp()}] [Membership] Received initiate-payment request`,
-  );
+  console.log(`[${getTimestamp()}] [Membership] Received initiate-payment request`);
 
   try {
-    const { tier, userId } = req.body;
+    const { tier, userId, userEmail } = req.body; // ← Get email from frontend too
 
     // Validate required fields
     if (!userId) {
       console.warn(`[${getTimestamp()}] [Membership] Missing userId`);
       return res.status(400).json({ error: "Missing userId parameter" });
+    }
+
+    if (!userEmail) {
+      console.warn(`[${getTimestamp()}] [Membership] Missing userEmail`);
+      return res.status(400).json({ error: "Missing userEmail parameter" });
     }
 
     if (!tier) {
@@ -126,21 +129,13 @@ router.post("/initiate-payment", async (req, res) => {
       });
     }
 
-    // Authenticate with PocketBase and fetch user email
-    await authenticatePocketBase();
-    const user = await pb.collection("users").getOne(userId);
-    const userEmail = user.email;
-
-    if (!userEmail) {
-      console.error(
-        `[${getTimestamp()}] [Membership] User ${userId} has no email address`,
-      );
-      return res.status(400).json({ error: "User email not found" });
-    }
+    // Note: We DON'T need to fetch the user from PocketBase
+    // We just use the userId and userEmail from the frontend
+    // This matches the pattern in paystack.js
 
     const tierData = MEMBERSHIP_TIERS[tier];
     console.log(
-      `[${getTimestamp()}] [Membership] Initiating payment — tier: ${tier}, USD: $${tierData.price}, kobo: ${tierData.amount_kobo}, user: ${userId}`,
+      `[${getTimestamp()}] [Membership] Initiating payment — tier: ${tier}, USD: $${tierData.price}, kobo: ${tierData.amount_kobo}, user: ${userId}, email: ${userEmail}`,
     );
 
     const metadata = {
@@ -155,7 +150,7 @@ router.post("/initiate-payment", async (req, res) => {
     const response = await axios.post(
       `${PAYSTACK_API_BASE}/transaction/initialize`,
       {
-        email: userEmail,
+        email: userEmail, // ← Use email from frontend
         amount: tierData.amount_kobo,
         metadata,
         callback_url: `${process.env.FRONTEND_URL || "https://velocitygloballeasing.com"}/payment-success`,
@@ -189,13 +184,6 @@ router.post("/initiate-payment", async (req, res) => {
     
     if (error.response?.data) {
       console.error(`[${getTimestamp()}] [Membership] API error details:`, error.response.data);
-    }
-    
-    if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
-      return res.status(503).json({
-        error: 'Paystack service unavailable',
-        details: error.message
-      });
     }
     
     return res
