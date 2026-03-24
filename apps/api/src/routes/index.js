@@ -4,6 +4,7 @@ import bulkLessonsRouter from './bulkLessons.js';
 import healthCheckRouter from './health-check.js';
 import diagnosticRouter from './diagnostic.js';
 import contactRouter from './contact.js';
+import membershipRouter from './membership.js'; 
 
 export default function routes() {
   const router = express.Router();

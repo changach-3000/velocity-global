@@ -30,6 +30,7 @@ import express from 'express';
 import cors from 'cors';
 import routes from './routes/index.js';
 import paystackRoutes from './routes/paystack.js';
+import PocketBase from 'pocketbase';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
