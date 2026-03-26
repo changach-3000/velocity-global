@@ -153,7 +153,7 @@ router.post("/initiate-payment", async (req, res) => {
         email: userEmail, // ← Use email from frontend
         amount: tierData.amount_kobo,
         metadata,
-        callback_url: `${process.env.FRONTEND_URL || "https://velocitygloballeasing.com"}/payment-success`,
+        callback_url: `${process.env.FRONTEND_URL || "https://www.velocitygloballeasing.com"}/membership/success`,
       },
       {
         headers: {
@@ -189,6 +189,100 @@ router.post("/initiate-payment", async (req, res) => {
     return res
       .status(500)
       .json({ error: "Failed to initiate payment", details: error.message });
+  }
+});
+
+/**
+ * POST /membership/verify
+ * Verifies a membership payment and returns membership details
+ */
+router.post("/verify", async (req, res) => {
+  console.log(`[${getTimestamp()}] [Membership] Received verify request`);
+
+  try {
+    const { reference } = req.body;
+
+    if (!reference) {
+      return res.status(400).json({ success: false, message: 'Missing reference' });
+    }
+
+    console.log(`[${getTimestamp()}] [Membership] Verifying membership payment: ${reference}`);
+
+    // First, check if membership already exists in our database
+    await authenticatePocketBase();
+
+    try {
+      // Try to find the membership by payment reference
+      const membership = await pb
+        .collection("user_memberships")
+        .getFirstListItem(`payment_reference="${reference}"`);
+
+      console.log(`[${getTimestamp()}] [Membership] Found membership: ${membership.id}`);
+
+      return res.status(200).json({
+        success: true,
+        message: 'Membership verified successfully!',
+        data: {
+          membership: {
+            id: membership.id,
+            tier: membership.tier,
+            purchase_date: membership.purchase_date,
+            status: membership.status,
+            amount_paid: membership.amount_paid
+          }
+        }
+      });
+    } catch (notFoundError) {
+      // Membership not found yet - maybe webhook hasn't processed
+      console.log(`[${getTimestamp()}] [Membership] Membership not found, checking Paystack...`);
+
+      // Verify with Paystack directly
+      const paystackResponse = await axios.get(
+        `${PAYSTACK_API_BASE}/transaction/verify/${reference}`,
+        {
+          headers: {
+            Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`
+          }
+        }
+      );
+
+      if (!paystackResponse.data.status) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Payment verification failed' 
+        });
+      }
+
+      const transaction = paystackResponse.data.data;
+
+      if (transaction.status !== 'success') {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Payment not successful' 
+        });
+      }
+
+      // Payment is successful but membership not created yet (webhook delayed)
+      // Return success anyway - webhook will create it soon
+      const metadata = transaction.metadata || {};
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Payment confirmed! Your membership will be activated shortly.',
+        data: {
+          pending: true,
+          tier: metadata.tier,
+          reference: reference
+        }
+      });
+    }
+  } catch (error) {
+    console.error(`[${getTimestamp()}] [Membership] Verify error:`, error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to verify membership',
+      details: error.message
+    });
   }
 });
 
