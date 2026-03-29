@@ -621,67 +621,364 @@
 
 // export default router;
 
+// import express from 'express';
+// import axios from 'axios';
+// import crypto from 'crypto';
+// import PocketBase from 'pocketbase';
+
+// const router = express.Router();
+// const POCKETBASE_URL = 'https://velocity-global-db-v2.onrender.com';
+// const pb = new PocketBase(POCKETBASE_URL);
+// pb.autoCancellation(false);
+
+// const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+// const PAYSTACK_WEBHOOK_SECRET = process.env.PAYSTACK_WEBHOOK_SECRET;
+// const PAYSTACK_API_BASE = 'https://api.paystack.co';
+// const FRONTEND_URL = process.env.FRONTEND_URL || 'https://velocitygloballeasing.com';
+
+// const getTimestamp = () => new Date().toISOString();
+
+// // Helper to authenticate as admin/superuser
+// const authenticatePocketBase = async () => {
+//   try {
+//     if (!pb.authStore.isValid) {
+//       console.log(`[${getTimestamp()}] [Paystack] Authenticating as user...`);
+//       await pb.collection('users').authWithPassword(
+//         process.env.POCKETBASE_ADMIN_EMAIL,
+//         process.env.POCKETBASE_ADMIN_PASSWORD
+//       );
+//       console.log(`[${getTimestamp()}] [Paystack] Authentication successful`);
+//     }
+//   } catch (error) {
+//     console.error(`[${getTimestamp()}] [Paystack] PocketBase authentication failed:`, error.message);
+//     throw new Error('Database authentication failed: ' + error.message);
+//   }
+// };
+
+// /**
+//  * POST /paystack/initialize
+//  * Initializes a Paystack transaction for course(s) purchase
+//  */
+// router.post('/initialize', async (req, res) => {
+//   console.log(`[${getTimestamp()}] [Paystack] Received initialize request`);
+//   console.log(req.body)
+
+//   try {
+//     const { courseId, cartItems, userId, userEmail, amount } = req.body;
+
+//     console.log('FULL BODY:', req.body);
+//     console.log('EMAIL RECEIVED:', req.body.userEmail);
+
+//     // Validation
+//     if (!userId) {
+//       console.warn(`[${getTimestamp()}] [Paystack] Validation failed: Missing userId`);
+//       return res.status(400).json({ error: 'Missing userId' });
+//     }
+
+//     if (!userEmail) {
+//       console.warn(`[${getTimestamp()}] [Paystack] Validation failed: Missing userEmail`);
+//       return res.status(400).json({ error: 'Missing userEmail' });
+//     }
+
+//     if (!amount || amount <= 0) {
+//       console.warn(`[${getTimestamp()}] [Paystack] Validation failed: Invalid amount`);
+//       return res.status(400).json({ error: 'Invalid amount' });
+//     }
+
+//     // Determine courses to purchase
+//     const coursesToPurchase =
+//       cartItems && Array.isArray(cartItems) && cartItems.length > 0
+//         ? cartItems
+//         : courseId
+//         ? [courseId]
+//         : [];
+
+//     if (coursesToPurchase.length === 0) {
+//       console.warn(`[${getTimestamp()}] [Paystack] Validation failed: No courses specified`);
+//       return res.status(400).json({ error: 'Missing courseId or cartItems' });
+//     }
+
+//     console.log(
+//       `[${getTimestamp()}] [Paystack] Initializing for ${coursesToPurchase.length} course(s), User: ${userId}, Amount: $${amount} USD`
+//     );
+
+//     // Convert USD → KES → kobo (Paystack smallest unit)
+//     const USD_TO_KES_RATE = 129;
+//     const amountInKes = amount * USD_TO_KES_RATE;
+//     const amountInKobo = Math.round(amountInKes * 100);
+
+//     console.log(
+//       `[${getTimestamp()}] [Paystack] USD: ${amount} → KES: ${amountInKes} (rate: ${USD_TO_KES_RATE}) → kobo: ${amountInKobo}`
+//     );
+
+//     // Use custom_fields so Paystack reliably returns the data on verify
+//     const metadata = {
+//       cancel_action: `${FRONTEND_URL}/cancel`,
+//       custom_fields: [
+//         {
+//           display_name: 'User ID',
+//           variable_name: 'userId',
+//           value: userId,
+//         },
+//         {
+//           display_name: 'Course ID',
+//           variable_name: 'courseId',
+//           value: courseId || '',
+//         },
+//         {
+//           display_name: 'Cart Items',
+//           variable_name: 'cartItems',
+//           // Stringify the array — we parse it back in /verify
+//           value: JSON.stringify(coursesToPurchase),
+//         },
+//         {
+//           display_name: 'USD Amount',
+//           variable_name: 'usdAmount',
+//           value: String(amount),
+//         },
+//       ],
+//     };
+
+//     console.log(`[${getTimestamp()}] [Paystack] Metadata:`, JSON.stringify(metadata));
+
+//     // Call Paystack API
+//     console.log(`[${getTimestamp()}] [Paystack] Calling Paystack initialize API...`);
+//     const response = await axios.post(
+//       `${PAYSTACK_API_BASE}/transaction/initialize`,
+//       {
+//         email: userEmail,
+//         amount: amountInKobo,
+//         metadata,
+//       },
+//       {
+//         headers: {
+//           Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+//           'Content-Type': 'application/json',
+//         },
+//       }
+//     );
+
+//     if (!response.data.status) {
+//       console.error(`[${getTimestamp()}] [Paystack] API returned error: ${response.data.message}`);
+//       return res.status(400).json({ error: response.data.message });
+//     }
+
+//     const { authorization_url, reference } = response.data.data;
+//     console.log(`[${getTimestamp()}] [Paystack] Transaction initialized. Reference: ${reference}`);
+
+//     return res.status(200).json({ authorization_url, reference });
+
+//   } catch (error) {
+//     console.error(`[${getTimestamp()}] [Paystack] Initialize error: ${error.message}`);
+
+//     if (error.response?.data) {
+//       console.error(`[${getTimestamp()}] [Paystack] API error details:`, error.response.data);
+//     }
+
+//     if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+//       return res.status(503).json({
+//         error: 'Paystack service unavailable',
+//         details: error.message,
+//       });
+//     }
+
+//     return res.status(500).json({
+//       error: 'Failed to initialize transaction',
+//       details: error.message,
+//     });
+//   }
+// });
+
+// /**
+//  * POST /paystack/verify
+//  * Verifies a Paystack transaction and creates enrollment records
+//  */
+// router.post('/verify', async (req, res) => {
+//   console.log(`[${getTimestamp()}] [Paystack] Received verify request`);
+
+//   try {
+//     const { reference } = req.body;
+
+//     if (!reference) {
+//       console.warn(`[${getTimestamp()}] [Paystack] Validation failed: Missing reference`);
+//       return res.status(400).json({ error: 'Missing reference' });
+//     }
+
+//     console.log(`[${getTimestamp()}] [Paystack] Verifying transaction: ${reference}`);
+
+//     // Call Paystack verify API
+//     const response = await axios.get(
+//       `${PAYSTACK_API_BASE}/transaction/verify/${reference}`,
+//       {
+//         headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` },
+//       }
+//     );
+
+//     if (!response.data.status) {
+//       console.error(`[${getTimestamp()}] [Paystack] Verification failed: ${response.data.message}`);
+//       return res.status(400).json({ success: false, message: 'Payment verification failed' });
+//     }
+
+//     const transaction = response.data.data;
+
+//     // Log full transaction so we can debug metadata shape if needed
+//     console.log(`[${getTimestamp()}] [Paystack] Full transaction:`, JSON.stringify(transaction, null, 2));
+
+//     if (transaction.status !== 'success') {
+//       console.log(`[${getTimestamp()}] [Paystack] Transaction status: ${transaction.status}`);
+//       return res.status(400).json({ success: false, message: 'Payment not successful' });
+//     }
+
+//     console.log(`[${getTimestamp()}] [Paystack] Transaction verified. Reference: ${reference}`);
+
+//     // ─── Extract metadata from custom_fields ───────────────────────────────
+//     const customFields = transaction.metadata?.custom_fields || [];
+
+//     const getField = (variableName) =>
+//       customFields.find((f) => f.variable_name === variableName)?.value ?? null;
+
+//     const userId   = getField('userId');
+//     const courseId = getField('courseId');
+//     const cartItemsRaw = getField('cartItems');
+
+//     console.log(`[${getTimestamp()}] [Paystack] Extracted — userId: ${userId}, courseId: ${courseId}, cartItems: ${cartItemsRaw}`);
+
+//     if (!userId) {
+//       console.error(`[${getTimestamp()}] [Paystack] Missing userId in metadata`);
+//       return res.status(400).json({ success: false, message: 'Invalid transaction metadata: missing userId' });
+//     }
+
+//     // Parse cartItems — it was JSON.stringify'd on initialize
+//     let coursesToEnroll = [];
+//     try {
+//       const parsed = cartItemsRaw ? JSON.parse(cartItemsRaw) : [];
+//       coursesToEnroll = Array.isArray(parsed) && parsed.length > 0
+//         ? parsed
+//         : courseId
+//         ? [courseId]
+//         : [];
+//     } catch (parseErr) {
+//       console.warn(`[${getTimestamp()}] [Paystack] Could not parse cartItems, falling back to courseId`);
+//       coursesToEnroll = courseId ? [courseId] : [];
+//     }
+
+//     if (coursesToEnroll.length === 0) {
+//       console.error(`[${getTimestamp()}] [Paystack] No courses found in metadata`);
+//       return res.status(400).json({ success: false, message: 'No courses to enroll' });
+//     }
+
+//     console.log(`[${getTimestamp()}] [Paystack] Enrolling in ${coursesToEnroll.length} course(s):`, coursesToEnroll);
+
+//     // Authenticate with PocketBase
+//     await authenticatePocketBase();
+
+//     // Create enrollment records
+//     const enrollments = [];
+//     const enrollmentErrors = [];
+
+//     for (const cId of coursesToEnroll) {
+//       try {
+//         console.log(`[${getTimestamp()}] [Paystack] Processing enrollment — user: ${userId}, course: ${cId}`);
+
+//         // Check for existing enrollment to avoid duplicates
+//         try {
+//           const existing = await pb.collection('enrollment').getFirstListItem(
+//             `user_id="${userId}" && course_id="${cId}"`
+//           );
+//           if (existing) {
+//             console.log(`[${getTimestamp()}] [Paystack] Enrollment already exists: ${existing.id}`);
+//             enrollments.push({ courseId: cId, userId, enrollmentId: existing.id, status: 'existing' });
+//             continue;
+//           }
+//         } catch (e) {
+//           // 404 = not found, safe to create
+//         }
+
+//         const enrollment = await pb.collection('enrollment').create({
+//           user_id: userId,
+//           course_id: cId,
+//           enrollment_date: new Date().toISOString(),
+//           status: 'active',
+//           stripe_session_id: reference, // reusing this field for Paystack reference
+//         });
+
+//         console.log(`[${getTimestamp()}] [Paystack] Enrollment created: ${enrollment.id}`);
+//         enrollments.push({ courseId: cId, userId, enrollmentId: enrollment.id, status: 'new' });
+
+//       } catch (enrollmentErr) {
+//         console.error(
+//           `[${getTimestamp()}] [Paystack] Failed to enroll in course ${cId}: ${enrollmentErr.message}`
+//         );
+//         enrollmentErrors.push({ courseId: cId, error: enrollmentErr.message });
+//       }
+//     }
+
+//     if (enrollments.length > 0) {
+//       console.log(`[${getTimestamp()}] [Paystack] Successfully processed ${enrollments.length} enrollment(s)`);
+//       return res.status(200).json({
+//         success: true,
+//         enrollments,
+//         errors: enrollmentErrors.length > 0 ? enrollmentErrors : undefined,
+//       });
+//     } else {
+//       console.error(`[${getTimestamp()}] [Paystack] Failed to create any enrollments`);
+//       return res.status(500).json({
+//         success: false,
+//         message: 'Failed to create enrollments',
+//         errors: enrollmentErrors,
+//       });
+//     }
+
+//   } catch (error) {
+//     console.error(`[${getTimestamp()}] [Paystack] Verify error: ${error.message}`);
+
+//     if (error.response?.data) {
+//       console.error(`[${getTimestamp()}] [Paystack] API error details:`, error.response.data);
+//     }
+
+//     return res.status(500).json({
+//       success: false,
+//       message: 'Failed to verify transaction',
+//       details: error.message,
+//     });
+//   }
+// });
+
+// export default router;
+
 import express from 'express';
 import axios from 'axios';
-import crypto from 'crypto';
 import PocketBase from 'pocketbase';
 
 const router = express.Router();
+
 const POCKETBASE_URL = 'https://velocity-global-db-v2.onrender.com';
 const pb = new PocketBase(POCKETBASE_URL);
 pb.autoCancellation(false);
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
-const PAYSTACK_WEBHOOK_SECRET = process.env.PAYSTACK_WEBHOOK_SECRET;
 const PAYSTACK_API_BASE = 'https://api.paystack.co';
-const FRONTEND_URL = process.env.FRONTEND_URL || 'https://velocitygloballeasing.com';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://www.velocitygloballeasing.com';
 
 const getTimestamp = () => new Date().toISOString();
 
-// Helper to authenticate as admin/superuser
+// Authenticate PocketBase if not already
 const authenticatePocketBase = async () => {
-  try {
-    if (!pb.authStore.isValid) {
-      console.log(`[${getTimestamp()}] [Paystack] Authenticating as user...`);
-      await pb.collection('users').authWithPassword(
-        process.env.POCKETBASE_ADMIN_EMAIL,
-        process.env.POCKETBASE_ADMIN_PASSWORD
-      );
-      console.log(`[${getTimestamp()}] [Paystack] Authentication successful`);
-    }
-  } catch (error) {
-    console.error(`[${getTimestamp()}] [Paystack] PocketBase authentication failed:`, error.message);
-    throw new Error('Database authentication failed: ' + error.message);
+  if (!pb.authStore.isValid) {
+    await pb.collection('users').authWithPassword(
+      process.env.POCKETBASE_ADMIN_EMAIL,
+      process.env.POCKETBASE_ADMIN_PASSWORD
+    );
   }
 };
 
-/**
- * POST /paystack/initialize
- * Initializes a Paystack transaction for course(s) purchase
- */
+// ─── Initialize Paystack Transaction ───────────────────────────────
 router.post('/initialize', async (req, res) => {
-  console.log(`[${getTimestamp()}] [Paystack] Received initialize request`);
-
   try {
-    const { courseId, cartItems, userId, userEmail, amount } = req.body;
+    const { amount, userEmail, userId, courseId, cartItems } = req.body;
 
-    console.log('FULL BODY:', req.body);
-   console.log('EMAIL RECEIVED:', req.body.userEmail);
-
-    // Validation
-    if (!userId) {
-      console.warn(`[${getTimestamp()}] [Paystack] Validation failed: Missing userId`);
-      return res.status(400).json({ error: 'Missing userId' });
-    }
-
-    if (!userEmail) {
-      console.warn(`[${getTimestamp()}] [Paystack] Validation failed: Missing userEmail`);
-      return res.status(400).json({ error: 'Missing userEmail' });
-    }
-
-    if (!amount || amount <= 0) {
-      console.warn(`[${getTimestamp()}] [Paystack] Validation failed: Invalid amount`);
-      return res.status(400).json({ error: 'Invalid amount' });
+    if (!userEmail || !userId || !amount) {
+      return res.status(400).json({ error: 'Missing required fields' });
     }
 
     // Determine courses to purchase
@@ -693,204 +990,86 @@ router.post('/initialize', async (req, res) => {
         : [];
 
     if (coursesToPurchase.length === 0) {
-      console.warn(`[${getTimestamp()}] [Paystack] Validation failed: No courses specified`);
-      return res.status(400).json({ error: 'Missing courseId or cartItems' });
+      return res.status(400).json({ error: 'No courses specified' });
     }
 
-    console.log(
-      `[${getTimestamp()}] [Paystack] Initializing for ${coursesToPurchase.length} course(s), User: ${userId}, Amount: $${amount} USD`
-    );
-
-    // Convert USD → KES → kobo (Paystack smallest unit)
+    // Convert USD → KES → kobo
     const USD_TO_KES_RATE = 129;
-    const amountInKes = amount * USD_TO_KES_RATE;
-    const amountInKobo = Math.round(amountInKes * 100);
+    const amountInKobo = Math.round(amount * USD_TO_KES_RATE * 100);
 
-    console.log(
-      `[${getTimestamp()}] [Paystack] USD: ${amount} → KES: ${amountInKes} (rate: ${USD_TO_KES_RATE}) → kobo: ${amountInKobo}`
-    );
-
-    // Use custom_fields so Paystack reliably returns the data on verify
     const metadata = {
-      cancel_action: `${FRONTEND_URL}/cancel`,
       custom_fields: [
-        {
-          display_name: 'User ID',
-          variable_name: 'userId',
-          value: userId,
-        },
-        {
-          display_name: 'Course ID',
-          variable_name: 'courseId',
-          value: courseId || '',
-        },
-        {
-          display_name: 'Cart Items',
-          variable_name: 'cartItems',
-          // Stringify the array — we parse it back in /verify
-          value: JSON.stringify(coursesToPurchase),
-        },
-        {
-          display_name: 'USD Amount',
-          variable_name: 'usdAmount',
-          value: String(amount),
-        },
+        { display_name: 'User ID', variable_name: 'userId', value: userId },
+        { display_name: 'Course ID', variable_name: 'courseId', value: courseId || '' },
+        { display_name: 'Cart Items', variable_name: 'cartItems', value: JSON.stringify(coursesToPurchase) },
+        { display_name: 'USD Amount', variable_name: 'usdAmount', value: String(amount) },
       ],
     };
 
-    console.log(`[${getTimestamp()}] [Paystack] Metadata:`, JSON.stringify(metadata));
-
-    // Call Paystack API
-    console.log(`[${getTimestamp()}] [Paystack] Calling Paystack initialize API...`);
     const response = await axios.post(
       `${PAYSTACK_API_BASE}/transaction/initialize`,
       {
         email: userEmail,
         amount: amountInKobo,
         metadata,
+        callback_url: `${FRONTEND_URL}/success`,
       },
-      {
-        headers: {
-          Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
-          'Content-Type': 'application/json',
-        },
-      }
+      { headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`, 'Content-Type': 'application/json' } }
     );
 
-    if (!response.data.status) {
-      console.error(`[${getTimestamp()}] [Paystack] API returned error: ${response.data.message}`);
-      return res.status(400).json({ error: response.data.message });
-    }
-
-    const { authorization_url, reference, access_code } = response.data.data;
-    console.log(`[${getTimestamp()}] [Paystack] Transaction initialized. Reference: ${reference}`);
-
-    return res.status(200).json({ authorization_url, reference, access_code });
-
+    const { authorization_url, reference } = response.data.data;
+    return res.status(200).json({ authorization_url, reference });
   } catch (error) {
-    console.error(`[${getTimestamp()}] [Paystack] Initialize error: ${error.message}`);
-
-    if (error.response?.data) {
-      console.error(`[${getTimestamp()}] [Paystack] API error details:`, error.response.data);
-    }
-
-    if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
-      return res.status(503).json({
-        error: 'Paystack service unavailable',
-        details: error.message,
-      });
-    }
-
-    return res.status(500).json({
-      error: 'Failed to initialize transaction',
-      details: error.message,
-    });
+    console.error(`[Paystack] Initialize error:`, error.response?.data || error.message);
+    return res.status(500).json({ error: 'Failed to initialize transaction' });
   }
 });
 
-/**
- * POST /paystack/verify
- * Verifies a Paystack transaction and creates enrollment records
- */
+// ─── Verify Paystack Transaction ───────────────────────────────
 router.post('/verify', async (req, res) => {
-  console.log(`[${getTimestamp()}] [Paystack] Received verify request`);
-
   try {
     const { reference } = req.body;
+    if (!reference) return res.status(400).json({ error: 'Missing reference' });
 
-    if (!reference) {
-      console.warn(`[${getTimestamp()}] [Paystack] Validation failed: Missing reference`);
-      return res.status(400).json({ error: 'Missing reference' });
-    }
-
-    console.log(`[${getTimestamp()}] [Paystack] Verifying transaction: ${reference}`);
-
-    // Call Paystack verify API
-    const response = await axios.get(
-      `${PAYSTACK_API_BASE}/transaction/verify/${reference}`,
-      {
-        headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` },
-      }
-    );
-
-    if (!response.data.status) {
-      console.error(`[${getTimestamp()}] [Paystack] Verification failed: ${response.data.message}`);
-      return res.status(400).json({ success: false, message: 'Payment verification failed' });
-    }
+    const response = await axios.get(`${PAYSTACK_API_BASE}/transaction/verify/${reference}`, {
+      headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` },
+    });
 
     const transaction = response.data.data;
 
-    // Log full transaction so we can debug metadata shape if needed
-    console.log(`[${getTimestamp()}] [Paystack] Full transaction:`, JSON.stringify(transaction, null, 2));
-
-    if (transaction.status !== 'success') {
-      console.log(`[${getTimestamp()}] [Paystack] Transaction status: ${transaction.status}`);
+    if (!transaction || transaction.status !== 'success') {
       return res.status(400).json({ success: false, message: 'Payment not successful' });
     }
 
-    console.log(`[${getTimestamp()}] [Paystack] Transaction verified. Reference: ${reference}`);
-
-    // ─── Extract metadata from custom_fields ───────────────────────────────
-    const customFields = transaction.metadata?.custom_fields || [];
-
+    // Extract metadata
     const getField = (variableName) =>
-      customFields.find((f) => f.variable_name === variableName)?.value ?? null;
+      transaction.metadata?.custom_fields?.find((f) => f.variable_name === variableName)?.value ?? null;
 
-    const userId   = getField('userId');
+    const userId = getField('userId');
     const courseId = getField('courseId');
     const cartItemsRaw = getField('cartItems');
 
-    console.log(`[${getTimestamp()}] [Paystack] Extracted — userId: ${userId}, courseId: ${courseId}, cartItems: ${cartItemsRaw}`);
-
-    if (!userId) {
-      console.error(`[${getTimestamp()}] [Paystack] Missing userId in metadata`);
-      return res.status(400).json({ success: false, message: 'Invalid transaction metadata: missing userId' });
-    }
-
-    // Parse cartItems — it was JSON.stringify'd on initialize
     let coursesToEnroll = [];
     try {
       const parsed = cartItemsRaw ? JSON.parse(cartItemsRaw) : [];
-      coursesToEnroll = Array.isArray(parsed) && parsed.length > 0
-        ? parsed
-        : courseId
-        ? [courseId]
-        : [];
-    } catch (parseErr) {
-      console.warn(`[${getTimestamp()}] [Paystack] Could not parse cartItems, falling back to courseId`);
+      coursesToEnroll = Array.isArray(parsed) && parsed.length > 0 ? parsed : courseId ? [courseId] : [];
+    } catch {
       coursesToEnroll = courseId ? [courseId] : [];
     }
 
     if (coursesToEnroll.length === 0) {
-      console.error(`[${getTimestamp()}] [Paystack] No courses found in metadata`);
       return res.status(400).json({ success: false, message: 'No courses to enroll' });
     }
 
-    console.log(`[${getTimestamp()}] [Paystack] Enrolling in ${coursesToEnroll.length} course(s):`, coursesToEnroll);
-
-    // Authenticate with PocketBase
     await authenticatePocketBase();
 
-    // Create enrollment records
     const enrollments = [];
-    const enrollmentErrors = [];
-
     for (const cId of coursesToEnroll) {
       try {
-        console.log(`[${getTimestamp()}] [Paystack] Processing enrollment — user: ${userId}, course: ${cId}`);
-
-        // Check for existing enrollment to avoid duplicates
-        try {
-          const existing = await pb.collection('enrollment').getFirstListItem(
-            `user_id="${userId}" && course_id="${cId}"`
-          );
-          if (existing) {
-            console.log(`[${getTimestamp()}] [Paystack] Enrollment already exists: ${existing.id}`);
-            enrollments.push({ courseId: cId, userId, enrollmentId: existing.id, status: 'existing' });
-            continue;
-          }
-        } catch (e) {
-          // 404 = not found, safe to create
+        const existing = await pb.collection('enrollment').getFirstListItem(`user_id="${userId}" && course_id="${cId}"`).catch(() => null);
+        if (existing) {
+          enrollments.push({ courseId: cId, userId, enrollmentId: existing.id, status: 'existing' });
+          continue;
         }
 
         const enrollment = await pb.collection('enrollment').create({
@@ -898,48 +1077,19 @@ router.post('/verify', async (req, res) => {
           course_id: cId,
           enrollment_date: new Date().toISOString(),
           status: 'active',
-          stripe_session_id: reference, // reusing this field for Paystack reference
+          stripe_session_id: reference, // reuse field
         });
 
-        console.log(`[${getTimestamp()}] [Paystack] Enrollment created: ${enrollment.id}`);
         enrollments.push({ courseId: cId, userId, enrollmentId: enrollment.id, status: 'new' });
-
-      } catch (enrollmentErr) {
-        console.error(
-          `[${getTimestamp()}] [Paystack] Failed to enroll in course ${cId}: ${enrollmentErr.message}`
-        );
-        enrollmentErrors.push({ courseId: cId, error: enrollmentErr.message });
+      } catch (err) {
+        enrollments.push({ courseId: cId, userId, error: err.message });
       }
     }
 
-    if (enrollments.length > 0) {
-      console.log(`[${getTimestamp()}] [Paystack] Successfully processed ${enrollments.length} enrollment(s)`);
-      return res.status(200).json({
-        success: true,
-        enrollments,
-        errors: enrollmentErrors.length > 0 ? enrollmentErrors : undefined,
-      });
-    } else {
-      console.error(`[${getTimestamp()}] [Paystack] Failed to create any enrollments`);
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to create enrollments',
-        errors: enrollmentErrors,
-      });
-    }
-
+    return res.status(200).json({ success: true, enrollments });
   } catch (error) {
-    console.error(`[${getTimestamp()}] [Paystack] Verify error: ${error.message}`);
-
-    if (error.response?.data) {
-      console.error(`[${getTimestamp()}] [Paystack] API error details:`, error.response.data);
-    }
-
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to verify transaction',
-      details: error.message,
-    });
+    console.error(`[Paystack] Verify error:`, error.response?.data || error.message);
+    return res.status(500).json({ success: false, message: 'Verification failed' });
   }
 });
 
