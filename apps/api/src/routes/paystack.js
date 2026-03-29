@@ -312,7 +312,7 @@ pb.autoCancellation(false);
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 const PAYSTACK_WEBHOOK_SECRET = process.env.PAYSTACK_WEBHOOK_SECRET;
 const PAYSTACK_API_BASE = 'https://api.paystack.co';
-const FRONTEND_URL = process.env.FRONTEND_URL || 'https://velocitygloballeasing.com';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://www.velocitygloballeasing.com';
 
 const getTimestamp = () => new Date().toISOString();
 
