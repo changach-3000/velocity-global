@@ -665,6 +665,9 @@ router.post('/initialize', async (req, res) => {
   try {
     const { courseId, cartItems, userId, userEmail, amount } = req.body;
 
+    console.log('FULL BODY:', req.body);
+   console.log('EMAIL RECEIVED:', req.body.userEmail);
+
     // Validation
     if (!userId) {
       console.warn(`[${getTimestamp()}] [Paystack] Validation failed: Missing userId`);
