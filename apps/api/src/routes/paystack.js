@@ -759,10 +759,10 @@ router.post('/initialize', async (req, res) => {
       return res.status(400).json({ error: response.data.message });
     }
 
-    const { authorization_url, reference } = response.data.data;
+    const { authorization_url, reference, access_code } = response.data.data;
     console.log(`[${getTimestamp()}] [Paystack] Transaction initialized. Reference: ${reference}`);
 
-    return res.status(200).json({ authorization_url, reference });
+    return res.status(200).json({ authorization_url, reference, access_code });
 
   } catch (error) {
     console.error(`[${getTimestamp()}] [Paystack] Initialize error: ${error.message}`);
