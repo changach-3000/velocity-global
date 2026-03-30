@@ -1267,7 +1267,7 @@ router.get("/status", async (req, res) => {
       const result = await pb
         .collection("user_memberships")
         .getList(1, 1, {
-          filter: `user_id = '${userId}' && status = 'active'`,
+          filter: `user_id = '${userId}'`,
           sort: "-purchase_date",
         });
       
