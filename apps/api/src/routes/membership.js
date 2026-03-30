@@ -1210,13 +1210,59 @@ router.post("/webhook", async (req, res) => {
 /**
  * GET /membership/status
  */
+// router.get("/status", async (req, res) => {
+//   console.log(`[${getTimestamp()}] [Membership] Received status request`);
+//   try {
+//     const { userId } = req.query;
+//     if (!userId) {
+//       return res.status(400).json({ error: "Missing userId parameter" });
+//     }
+
+//     await authenticatePocketBase();
+
+//     try {
+//       const membership = await pb
+//         .collection("user_memberships")
+//         .getFirstListItem(`user_id="${userId}" && status="active"`, {
+//           sort: "-purchase_date",
+//         });
+
+//       const refundInfo = calculateRefundEligibility(membership.purchase_date);
+
+//       return res.status(200).json({
+//         hasMembership: true,
+//         tier: membership.tier,
+//         purchase_date: membership.purchase_date,
+//         status: membership.status,
+//         refund_eligible: refundInfo.eligible,
+//         days_remaining: refundInfo.daysRemaining,
+//       });
+//     } catch (e) {
+//       return res.status(200).json({ hasMembership: false });
+//     }
+//   } catch (error) {
+//     console.error(`[${getTimestamp()}] [Membership] Status error:`, error.message);
+//     return res.status(500).json({ error: "Failed to fetch membership status" });
+//   }
+// });
+
+/**
+ * GET /membership/status
+ * Returns the current user's active membership, or { hasMembership: false }.
+ */
 router.get("/status", async (req, res) => {
   console.log(`[${getTimestamp()}] [Membership] Received status request`);
+  console.log(`[${getTimestamp()}] [Membership] Query params:`, req.query);
+  
   try {
     const { userId } = req.query;
+    
     if (!userId) {
+      console.warn(`[${getTimestamp()}] [Membership] Missing userId parameter`);
       return res.status(400).json({ error: "Missing userId parameter" });
     }
+
+    console.log(`[${getTimestamp()}] [Membership] Looking for membership with userId: "${userId}"`);
 
     await authenticatePocketBase();
 
@@ -1227,18 +1273,31 @@ router.get("/status", async (req, res) => {
           sort: "-purchase_date",
         });
 
-      const refundInfo = calculateRefundEligibility(membership.purchase_date);
+      console.log(`[${getTimestamp()}] [Membership] Found membership:`, JSON.stringify(membership, null, 2));
 
-      return res.status(200).json({
+      const refundInfo = calculateRefundEligibility(membership.purchase_date);
+      
+      const responseData = {
         hasMembership: true,
         tier: membership.tier,
         purchase_date: membership.purchase_date,
         status: membership.status,
         refund_eligible: refundInfo.eligible,
         days_remaining: refundInfo.daysRemaining,
-      });
+      };
+      
+      console.log(`[${getTimestamp()}] [Membership] Returning success response:`, JSON.stringify(responseData, null, 2));
+      
+      return res.status(200).json(responseData);
+      
     } catch (e) {
-      return res.status(200).json({ hasMembership: false });
+      console.log(`[${getTimestamp()}] [Membership] No active membership found for userId: ${userId}`);
+      console.log(`[${getTimestamp()}] [Membership] Error details:`, e.message);
+      
+      const responseData = { hasMembership: false };
+      console.log(`[${getTimestamp()}] [Membership] Returning:`, JSON.stringify(responseData));
+      
+      return res.status(200).json(responseData);
     }
   } catch (error) {
     console.error(`[${getTimestamp()}] [Membership] Status error:`, error.message);
