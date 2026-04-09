@@ -826,7 +826,7 @@ const getTimestamp = () => new Date().toISOString();
 // Set value: 100 on a 'percent' code to also make it fully free.
 // ─────────────────────────────────────────────────────────────────────────────
 const PROMO_CODES = {
-  LAK26:  { type: 'percent', value: 0, message: 'Full access granted — enjoy the course!' },
+  LAK26:  { type: 'percent', value: 0, message: 'Enjoy the course!' },
   // Examples — uncomment or copy to add more:
   // SAVE20: { type: 'percent', value: 20,  message: '20% discount applied!' },
   // VIP50:  { type: 'percent', value: 50,  message: '50% off applied!' },
