@@ -826,7 +826,7 @@ const getTimestamp = () => new Date().toISOString();
 // Set value: 100 on a 'percent' code to also make it fully free.
 // ─────────────────────────────────────────────────────────────────────────────
 const PROMO_CODES = {
-  LAK26:  { type: 'percent', value: 100, message: 'Full access granted — enjoy the course!' },
+  LAK26:  { type: 'percent', value: 0, message: 'Full access granted — enjoy the course!' },
   // Examples — uncomment or copy to add more:
   // SAVE20: { type: 'percent', value: 20,  message: '20% discount applied!' },
   // VIP50:  { type: 'percent', value: 50,  message: '50% off applied!' },
@@ -898,7 +898,7 @@ const createEnrollments = async (coursesToEnroll, userId, reference) => {
         course_id: cId,
         enrollment_date: new Date().toISOString(),
         status: 'active',
-        stripe_session_id: reference,
+        stripe_session_id: reference
       });
 
       console.log(`[${getTimestamp()}] [Paystack] Enrollment created: ${enrollment.id}`);
