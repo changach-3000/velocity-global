@@ -740,9 +740,10 @@ import PocketBase from "pocketbase";
 
 const router = express.Router();
 
-const pb = new PocketBase(
-  process.env.POCKETBASE_URL || "http://localhost:8090"
-);
+// const pb = new PocketBase(
+//   process.env.POCKETBASE_URL || "http://localhost:8090"
+// );
+const pb = new PocketBase('https://velocity-global-db-v2.onrender.com');
 pb.autoCancellation(false);
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
@@ -782,7 +783,7 @@ const authenticatePocketBase = async () => {
       console.log(`[${getTimestamp()}] [Membership] PocketBase authentication successful`);
     }
   } catch (error) {
-    console.error(`[${getTimestamp()}] [Membership] PocketBase authentication failed:`, error.message);
+    console.error(`[${getTimestamp()}] [Membership] PocketBase authentication failed:`, error);
     throw new Error("Database authentication failed: " + error.message);
   }
 };
@@ -1267,7 +1268,7 @@ router.get("/status", async (req, res) => {
       const result = await pb
         .collection("user_memberships")
         .getList(1, 1, {
-          filter: `user_id = '${userId}'`,
+          filter: `user_id="${userId}"`,
           sort: "-purchase_date",
         });
       
