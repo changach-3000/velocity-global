@@ -1158,7 +1158,7 @@ router.post("/initialize", async (req, res) => {
     const amountInCents = Math.round(finalAmount * 100);
 
     console.log(
-      `[${getTimestamp()}] [Paystack] USD: ${finalAmount} → KES: ${amountInKes} (rate: ${USD_TO_KES_RATE}) → kobo: ${amountInCents}`,
+      `[${getTimestamp()}] [Paystack] USD: ${finalAmount} → KES: ${amountInCents} (rate: ${USD_TO_KES_RATE}) → kobo: ${amountInCents}`,
     );
 
     // Use custom_fields so Paystack reliably returns data on /verify
