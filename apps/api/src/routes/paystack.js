@@ -1155,12 +1155,10 @@ router.post("/initialize", async (req, res) => {
     );
 
     // Convert USD → KES → kobo (Paystack smallest unit)
-    const USD_TO_KES_RATE = 129;
-    const amountInKes = finalAmount * USD_TO_KES_RATE;
-    const amountInKobo = Math.round(amountInKes * 100);
+    const amountInCents = Math.round(finalAmount * 100);
 
     console.log(
-      `[${getTimestamp()}] [Paystack] USD: ${finalAmount} → KES: ${amountInKes} (rate: ${USD_TO_KES_RATE}) → kobo: ${amountInKobo}`,
+      `[${getTimestamp()}] [Paystack] USD: ${finalAmount} → KES: ${amountInKes} (rate: ${USD_TO_KES_RATE}) → kobo: ${amountInCents}`,
     );
 
     // Use custom_fields so Paystack reliably returns data on /verify
@@ -1204,7 +1202,7 @@ router.post("/initialize", async (req, res) => {
       `${PAYSTACK_API_BASE}/transaction/initialize`,
       {
         email: userEmail,
-        amount: amountInKobo,
+        amount: amountInCents,
         metadata,
         callback_url: `${FRONTEND_URL}/success`,
       },
